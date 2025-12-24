@@ -2,6 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUser, UpdateUser, SearchUsers } from './users.dto';
+import {
+  buildOrderBy,
+  buildPagination,
+  buildPaginatedResponse,
+} from '../../common/helpers/query-builder';
 
 @Injectable()
 export class UsersService {
@@ -9,9 +14,7 @@ export class UsersService {
 
   async search(searchDto: SearchUsers) {
     const { filter, sort, pagination } = searchDto;
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = buildPagination(pagination);
 
     // Build Prisma where clause from filter
     const where: Prisma.UserWhereInput = {};
@@ -66,30 +69,19 @@ export class UsersService {
       }
     }
 
-    // Build orderBy
-    const sortField = sort?.field ?? 'createdAt';
-    const sortOrder = sort?.order ?? 'desc';
-    const orderBy: Prisma.UserOrderByWithRelationInput = {
-      [sortField]: sortOrder,
-    };
+    const orderBy = buildOrderBy(sort) as Prisma.UserOrderByWithRelationInput;
 
     const [data, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
         orderBy,
         skip,
-        take: limit,
+        take,
       }),
       this.prisma.user.count({ where }),
     ]);
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return buildPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string) {

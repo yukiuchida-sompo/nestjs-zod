@@ -2,6 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePost, UpdatePost, SearchPosts } from './posts.dto';
+import {
+  buildOrderBy,
+  buildPagination,
+  buildPaginatedResponse,
+} from '../../common/helpers/query-builder';
+
+const AUTHOR_SELECT = { id: true, name: true, email: true } as const;
 
 @Injectable()
 export class PostsService {
@@ -9,9 +16,7 @@ export class PostsService {
 
   async search(searchDto: SearchPosts) {
     const { filter, sort, pagination } = searchDto;
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { skip, take, page, limit } = buildPagination(pagination);
 
     // Build Prisma where clause from filter
     const where: Prisma.PostWhereInput = {};
@@ -69,49 +74,26 @@ export class PostsService {
       }
     }
 
-    // Build orderBy
-    const sortField = sort?.field ?? 'createdAt';
-    const sortOrder = sort?.order ?? 'desc';
-    const orderBy: Prisma.PostOrderByWithRelationInput = {
-      [sortField]: sortOrder,
-    };
+    const orderBy = buildOrderBy(sort) as Prisma.PostOrderByWithRelationInput;
 
     const [data, total] = await Promise.all([
       this.prisma.post.findMany({
         where,
-        include: {
-          author: {
-            select: { id: true, name: true, email: true },
-          },
-        },
+        include: { author: { select: AUTHOR_SELECT } },
         orderBy,
         skip,
-        take: limit,
+        take,
       }),
       this.prisma.post.count({ where }),
     ]);
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return buildPaginatedResponse(data, total, page, limit);
   }
 
   async findOne(id: string) {
     const post = await this.prisma.post.findUnique({
       where: { id },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      include: { author: { select: AUTHOR_SELECT } },
     });
 
     if (!post) {
@@ -127,19 +109,9 @@ export class PostsService {
         title: data.title,
         content: data.content,
         published: data.published ?? false,
-        author: {
-          connect: { id: data.authorId },
-        },
+        author: { connect: { id: data.authorId } },
       },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      include: { author: { select: AUTHOR_SELECT } },
     });
   }
 
@@ -148,23 +120,13 @@ export class PostsService {
     return this.prisma.post.update({
       where: { id },
       data,
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      include: { author: { select: AUTHOR_SELECT } },
     });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.post.delete({
-      where: { id },
-    });
+    return this.prisma.post.delete({ where: { id } });
   }
 
   async publish(id: string) {
@@ -172,15 +134,7 @@ export class PostsService {
     return this.prisma.post.update({
       where: { id },
       data: { published: true },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      include: { author: { select: AUTHOR_SELECT } },
     });
   }
 
@@ -189,15 +143,7 @@ export class PostsService {
     return this.prisma.post.update({
       where: { id },
       data: { published: false },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      include: { author: { select: AUTHOR_SELECT } },
     });
   }
 }
