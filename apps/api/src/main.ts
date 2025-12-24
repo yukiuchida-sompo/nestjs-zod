@@ -9,10 +9,12 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
+  // Enable CORS for frontend and API tools
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN || true, // true allows all origins in development
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
   });
 
   // Setup Swagger/OpenAPI
@@ -20,6 +22,7 @@ async function bootstrap() {
     .setTitle('NestJS Zod Prisma API')
     .setDescription('API with auto-generated TypeScript client')
     .setVersion('1.0')
+    .addServer('http://localhost:3001', 'Local development server')
     .addTag('users')
     .addTag('posts')
     .build();

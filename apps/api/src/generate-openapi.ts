@@ -14,6 +14,7 @@ async function generateOpenApi() {
     .setTitle('NestJS Zod Prisma API')
     .setDescription('API with auto-generated TypeScript client')
     .setVersion('1.0')
+    .addServer('http://localhost:3001', 'Local development server')
     .addTag('users')
     .addTag('posts')
     .build();
