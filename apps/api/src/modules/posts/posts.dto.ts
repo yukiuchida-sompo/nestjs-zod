@@ -9,8 +9,12 @@ import {
   DateFilterSchema,
 } from '../../common/schemas';
 
-// Base Post schema
-export const PostSchema = extendApi(
+// ============================================
+// Response Schemas (Output DTOs)
+// ============================================
+
+// Base Post response schema
+export const PostOutputSchema = extendApi(
   z.object({
     id: z.string().cuid(),
     title: z.string(),
@@ -21,22 +25,50 @@ export const PostSchema = extendApi(
     authorId: z.string().cuid(),
   }),
   {
-    title: 'Post',
-    description: 'A blog post entity',
+    title: 'PostOutputDto',
+    description: 'A blog post entity response',
   }
 );
 
-// Post with author
-export const PostWithAuthorSchema = PostSchema.extend({
-  author: z.object({
-    id: z.string().cuid(),
-    name: z.string().nullable(),
-    email: z.string().email(),
-  }),
+// Author nested in post response
+const AuthorInPostSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().nullable(),
+  email: z.string().email(),
 });
 
-// Search Post DTO - supports complex nested conditions
-export const SearchPostsSchema = extendApi(
+// Post with author response
+export const PostWithAuthorOutputSchema = extendApi(
+  PostOutputSchema.extend({
+    author: AuthorInPostSchema,
+  }),
+  {
+    title: 'PostWithAuthorOutputDto',
+    description: 'A blog post entity with author details',
+  }
+);
+
+// Paginated posts list response
+export const PostsListOutputSchema = extendApi(
+  z.object({
+    data: z.array(PostWithAuthorOutputSchema),
+    total: z.number().int().describe('Total number of matching records'),
+    page: z.number().int().describe('Current page number'),
+    limit: z.number().int().describe('Items per page'),
+    totalPages: z.number().int().describe('Total number of pages'),
+  }),
+  {
+    title: 'PostsListOutputDto',
+    description: 'Paginated list of posts response',
+  }
+);
+
+// ============================================
+// Request Schemas (Input DTOs)
+// ============================================
+
+// Search Posts input
+export const SearchPostsInputSchema = extendApi(
   z.object({
     filter: z.object({
       id: z.string().cuid().optional().describe('Filter by exact ID'),
@@ -57,13 +89,13 @@ export const SearchPostsSchema = extendApi(
     pagination: PaginationSchema.optional(),
   }),
   {
-    title: 'SearchPosts',
+    title: 'SearchPostsInputDto',
     description: 'Search criteria for posts with complex nested conditions',
   }
 );
 
-// Create Post DTO
-export const CreatePostSchema = extendApi(
+// Create Post input
+export const CreatePostInputSchema = extendApi(
   z.object({
     title: z.string().min(1).max(200).describe('Post title'),
     content: z.string().optional().describe('Post content'),
@@ -71,51 +103,48 @@ export const CreatePostSchema = extendApi(
     authorId: z.string().cuid().describe('Author user ID'),
   }),
   {
-    title: 'CreatePost',
+    title: 'CreatePostInputDto',
     description: 'Data required to create a new post',
   }
 );
 
-// Update Post DTO
-export const UpdatePostSchema = extendApi(
+// Update Post input
+export const UpdatePostInputSchema = extendApi(
   z.object({
     title: z.string().min(1).max(200).optional().describe('Post title'),
     content: z.string().nullable().optional().describe('Post content'),
     published: z.boolean().optional().describe('Publication status'),
   }),
   {
-    title: 'UpdatePost',
+    title: 'UpdatePostInputDto',
     description: 'Data to update an existing post',
   }
 );
 
-// Response schemas
-export const PostsListSchema = extendApi(
-  z.object({
-    data: z.array(PostWithAuthorSchema),
-    total: z.number().int().describe('Total number of matching records'),
-    page: z.number().int().describe('Current page number'),
-    limit: z.number().int().describe('Items per page'),
-    totalPages: z.number().int().describe('Total number of pages'),
-  }),
-  {
-    title: 'PostsList',
-    description: 'Paginated list of posts',
-  }
-);
+// ============================================
+// DTO Classes for NestJS
+// ============================================
 
-// Create DTO classes from Zod schemas
-export class SearchPostsDto extends createZodDto(SearchPostsSchema) {}
-export class CreatePostDto extends createZodDto(CreatePostSchema) {}
-export class UpdatePostDto extends createZodDto(UpdatePostSchema) {}
-export class PostDto extends createZodDto(PostSchema) {}
-export class PostWithAuthorDto extends createZodDto(PostWithAuthorSchema) {}
-export class PostsListDto extends createZodDto(PostsListSchema) {}
+// Input DTOs (Requests)
+export class SearchPostsInputDto extends createZodDto(SearchPostsInputSchema) {}
+export class CreatePostInputDto extends createZodDto(CreatePostInputSchema) {}
+export class UpdatePostInputDto extends createZodDto(UpdatePostInputSchema) {}
 
-// Type exports
-export type SearchPosts = z.infer<typeof SearchPostsSchema>;
-export type Post = z.infer<typeof PostSchema>;
-export type CreatePost = z.infer<typeof CreatePostSchema>;
-export type UpdatePost = z.infer<typeof UpdatePostSchema>;
-export type PostWithAuthor = z.infer<typeof PostWithAuthorSchema>;
-export type PostsList = z.infer<typeof PostsListSchema>;
+// Output DTOs (Responses)
+export class PostOutputDto extends createZodDto(PostOutputSchema) {}
+export class PostWithAuthorOutputDto extends createZodDto(PostWithAuthorOutputSchema) {}
+export class PostsListOutputDto extends createZodDto(PostsListOutputSchema) {}
+
+// ============================================
+// Type Exports
+// ============================================
+
+// Input types
+export type SearchPostsInput = z.infer<typeof SearchPostsInputSchema>;
+export type CreatePostInput = z.infer<typeof CreatePostInputSchema>;
+export type UpdatePostInput = z.infer<typeof UpdatePostInputSchema>;
+
+// Output types
+export type PostOutput = z.infer<typeof PostOutputSchema>;
+export type PostWithAuthorOutput = z.infer<typeof PostWithAuthorOutputSchema>;
+export type PostsListOutput = z.infer<typeof PostsListOutputSchema>;

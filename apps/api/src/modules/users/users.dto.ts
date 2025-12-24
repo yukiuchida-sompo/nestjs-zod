@@ -9,8 +9,12 @@ import {
   DateFilterSchema,
 } from '../../common/schemas';
 
-// Base User schema
-export const UserSchema = extendApi(
+// ============================================
+// Response Schemas (Output DTOs)
+// ============================================
+
+// Base User response schema
+export const UserOutputSchema = extendApi(
   z.object({
     id: z.string().cuid(),
     email: z.string().email(),
@@ -19,13 +23,49 @@ export const UserSchema = extendApi(
     updatedAt: z.coerce.date(),
   }),
   {
-    title: 'User',
-    description: 'A user entity',
+    title: 'UserOutputDto',
+    description: 'A user entity response',
   }
 );
 
-// Search User DTO - supports complex nested conditions
-export const SearchUsersSchema = extendApi(
+// User with posts response
+export const UserWithPostsOutputSchema = extendApi(
+  UserOutputSchema.extend({
+    posts: z.array(
+      z.object({
+        id: z.string().cuid(),
+        title: z.string(),
+        published: z.boolean(),
+      })
+    ),
+  }),
+  {
+    title: 'UserWithPostsOutputDto',
+    description: 'A user entity with related posts',
+  }
+);
+
+// Paginated users list response
+export const UsersListOutputSchema = extendApi(
+  z.object({
+    data: z.array(UserOutputSchema),
+    total: z.number().int().describe('Total number of matching records'),
+    page: z.number().int().describe('Current page number'),
+    limit: z.number().int().describe('Items per page'),
+    totalPages: z.number().int().describe('Total number of pages'),
+  }),
+  {
+    title: 'UsersListOutputDto',
+    description: 'Paginated list of users response',
+  }
+);
+
+// ============================================
+// Request Schemas (Input DTOs)
+// ============================================
+
+// Search Users input
+export const SearchUsersInputSchema = extendApi(
   z.object({
     filter: z.object({
       id: z.string().cuid().optional().describe('Filter by exact ID'),
@@ -48,73 +88,59 @@ export const SearchUsersSchema = extendApi(
     pagination: PaginationSchema.optional(),
   }),
   {
-    title: 'SearchUsers',
+    title: 'SearchUsersInputDto',
     description: 'Search criteria for users with complex nested conditions',
   }
 );
 
-// Create User DTO
-export const CreateUserSchema = extendApi(
+// Create User input
+export const CreateUserInputSchema = extendApi(
   z.object({
     email: z.string().email().describe('User email address'),
     name: z.string().min(1).max(100).optional().describe('User display name'),
   }),
   {
-    title: 'CreateUser',
+    title: 'CreateUserInputDto',
     description: 'Data required to create a new user',
   }
 );
 
-// Update User DTO
-export const UpdateUserSchema = extendApi(
+// Update User input
+export const UpdateUserInputSchema = extendApi(
   z.object({
     email: z.string().email().optional().describe('User email address'),
     name: z.string().min(1).max(100).nullable().optional().describe('User display name'),
   }),
   {
-    title: 'UpdateUser',
+    title: 'UpdateUserInputDto',
     description: 'Data to update an existing user',
   }
 );
 
-// User with posts
-export const UserWithPostsSchema = UserSchema.extend({
-  posts: z.array(
-    z.object({
-      id: z.string().cuid(),
-      title: z.string(),
-      published: z.boolean(),
-    })
-  ),
-});
+// ============================================
+// DTO Classes for NestJS
+// ============================================
 
-// Response schemas
-export const UsersListSchema = extendApi(
-  z.object({
-    data: z.array(UserSchema),
-    total: z.number().int().describe('Total number of matching records'),
-    page: z.number().int().describe('Current page number'),
-    limit: z.number().int().describe('Items per page'),
-    totalPages: z.number().int().describe('Total number of pages'),
-  }),
-  {
-    title: 'UsersList',
-    description: 'Paginated list of users',
-  }
-);
+// Input DTOs (Requests)
+export class SearchUsersInputDto extends createZodDto(SearchUsersInputSchema) {}
+export class CreateUserInputDto extends createZodDto(CreateUserInputSchema) {}
+export class UpdateUserInputDto extends createZodDto(UpdateUserInputSchema) {}
 
-// Create DTO classes from Zod schemas
-export class SearchUsersDto extends createZodDto(SearchUsersSchema) {}
-export class CreateUserDto extends createZodDto(CreateUserSchema) {}
-export class UpdateUserDto extends createZodDto(UpdateUserSchema) {}
-export class UserDto extends createZodDto(UserSchema) {}
-export class UserWithPostsDto extends createZodDto(UserWithPostsSchema) {}
-export class UsersListDto extends createZodDto(UsersListSchema) {}
+// Output DTOs (Responses)
+export class UserOutputDto extends createZodDto(UserOutputSchema) {}
+export class UserWithPostsOutputDto extends createZodDto(UserWithPostsOutputSchema) {}
+export class UsersListOutputDto extends createZodDto(UsersListOutputSchema) {}
 
-// Type exports
-export type SearchUsers = z.infer<typeof SearchUsersSchema>;
-export type User = z.infer<typeof UserSchema>;
-export type CreateUser = z.infer<typeof CreateUserSchema>;
-export type UpdateUser = z.infer<typeof UpdateUserSchema>;
-export type UserWithPosts = z.infer<typeof UserWithPostsSchema>;
-export type UsersList = z.infer<typeof UsersListSchema>;
+// ============================================
+// Type Exports
+// ============================================
+
+// Input types
+export type SearchUsersInput = z.infer<typeof SearchUsersInputSchema>;
+export type CreateUserInput = z.infer<typeof CreateUserInputSchema>;
+export type UpdateUserInput = z.infer<typeof UpdateUserInputSchema>;
+
+// Output types
+export type UserOutput = z.infer<typeof UserOutputSchema>;
+export type UserWithPostsOutput = z.infer<typeof UserWithPostsOutputSchema>;
+export type UsersListOutput = z.infer<typeof UsersListOutputSchema>;

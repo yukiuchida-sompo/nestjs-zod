@@ -14,11 +14,11 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@anatine/zod-nestjs';
 import { PostsService } from './posts.service';
 import {
-  SearchPostsDto,
-  CreatePostDto,
-  UpdatePostDto,
-  PostWithAuthorDto,
-  PostsListDto,
+  SearchPostsInputDto,
+  CreatePostInputDto,
+  UpdatePostInputDto,
+  PostWithAuthorOutputDto,
+  PostsListOutputDto,
 } from './posts.dto';
 
 @ApiTags('posts')
@@ -33,9 +33,9 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of posts matching the search criteria',
-    type: PostsListDto,
+    type: PostsListOutputDto,
   })
-  async search(@Body() searchDto: SearchPostsDto): Promise<PostsListDto> {
+  async search(@Body() searchDto: SearchPostsInputDto): Promise<PostsListOutputDto> {
     return this.postsService.search(searchDto);
   }
 
@@ -45,10 +45,10 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Post details with author',
-    type: PostWithAuthorDto,
+    type: PostWithAuthorOutputDto,
   })
   @ApiResponse({ status: 404, description: 'Post not found' })
-  async findOne(@Param('id') id: string): Promise<PostWithAuthorDto> {
+  async findOne(@Param('id') id: string): Promise<PostWithAuthorOutputDto> {
     return this.postsService.findOne(id);
   }
 
@@ -57,10 +57,10 @@ export class PostsController {
   @ApiResponse({
     status: 201,
     description: 'Post created successfully',
-    type: PostWithAuthorDto,
+    type: PostWithAuthorOutputDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid input' })
-  async create(@Body() createPostDto: CreatePostDto): Promise<PostWithAuthorDto> {
+  async create(@Body() createPostDto: CreatePostInputDto): Promise<PostWithAuthorOutputDto> {
     return this.postsService.create(createPostDto);
   }
 
@@ -70,13 +70,13 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Post updated successfully',
-    type: PostWithAuthorDto,
+    type: PostWithAuthorOutputDto,
   })
   @ApiResponse({ status: 404, description: 'Post not found' })
   async update(
     @Param('id') id: string,
-    @Body() updatePostDto: UpdatePostDto
-  ): Promise<PostWithAuthorDto> {
+    @Body() updatePostDto: UpdatePostInputDto
+  ): Promise<PostWithAuthorOutputDto> {
     return this.postsService.update(id, updatePostDto);
   }
 
@@ -96,10 +96,10 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Post published successfully',
-    type: PostWithAuthorDto,
+    type: PostWithAuthorOutputDto,
   })
   @ApiResponse({ status: 404, description: 'Post not found' })
-  async publish(@Param('id') id: string): Promise<PostWithAuthorDto> {
+  async publish(@Param('id') id: string): Promise<PostWithAuthorOutputDto> {
     return this.postsService.publish(id);
   }
 
@@ -109,10 +109,10 @@ export class PostsController {
   @ApiResponse({
     status: 200,
     description: 'Post unpublished successfully',
-    type: PostWithAuthorDto,
+    type: PostWithAuthorOutputDto,
   })
   @ApiResponse({ status: 404, description: 'Post not found' })
-  async unpublish(@Param('id') id: string): Promise<PostWithAuthorDto> {
+  async unpublish(@Param('id') id: string): Promise<PostWithAuthorOutputDto> {
     return this.postsService.unpublish(id);
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreatePost, UpdatePost, SearchPosts } from './posts.dto';
+import { CreatePostInput, UpdatePostInput, SearchPostsInput } from './posts.dto';
 import {
   buildOrderBy,
   buildPagination,
@@ -14,7 +14,7 @@ const AUTHOR_SELECT = { id: true, name: true, email: true } as const;
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async search(searchDto: SearchPosts) {
+  async search(searchDto: SearchPostsInput) {
     const { filter, sort, pagination } = searchDto;
     const { skip, take, page, limit } = buildPagination(pagination);
 
@@ -103,7 +103,7 @@ export class PostsService {
     return post;
   }
 
-  async create(data: CreatePost) {
+  async create(data: CreatePostInput) {
     return this.prisma.post.create({
       data: {
         title: data.title,
@@ -115,7 +115,7 @@ export class PostsService {
     });
   }
 
-  async update(id: string, data: UpdatePost) {
+  async update(id: string, data: UpdatePostInput) {
     await this.findOne(id);
     return this.prisma.post.update({
       where: { id },
