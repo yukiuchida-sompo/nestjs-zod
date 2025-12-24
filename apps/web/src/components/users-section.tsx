@@ -1,24 +1,48 @@
 'use client';
 
-import { useState } from 'react';
-import { useGetAllUsers, useCreateANewUser, useDeleteAUser } from '@/generated/api/users/users';
-import type { CreateUser } from '@/generated/schemas';
+import { useState, useEffect } from 'react';
+import {
+  useUsersControllerSearch,
+  useUsersControllerCreate,
+  useUsersControllerRemove,
+} from '@/generated/api/users/users';
+import type { CreateUserDto, UsersListDto } from '@/generated/schemas';
 
 export function UsersSection() {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<CreateUser>({ email: '', name: '' });
+  const [formData, setFormData] = useState<CreateUserDto>({ email: '' });
+  const [usersData, setUsersData] = useState<UsersListDto | null>(null);
 
-  const { data, isLoading, error, refetch } = useGetAllUsers();
-  const createUser = useCreateANewUser();
-  const deleteUser = useDeleteAUser();
+  const searchUsers = useUsersControllerSearch();
+  const createUser = useUsersControllerCreate();
+  const deleteUser = useUsersControllerRemove();
+
+  const loadUsers = async () => {
+    try {
+      const result = await searchUsers.mutateAsync({
+        data: {
+          pagination: { page: 1, limit: 20 },
+          sort: { field: 'createdAt', order: 'desc' },
+        },
+      });
+      setUsersData(result.data);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await createUser.mutateAsync({ data: formData });
-      setFormData({ email: '', name: '' });
+      setFormData({ email: '' });
       setShowForm(false);
-      refetch();
+      loadUsers();
     } catch (err) {
       console.error('Failed to create user:', err);
     }
@@ -28,13 +52,13 @@ export function UsersSection() {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
       await deleteUser.mutateAsync({ id });
-      refetch();
+      loadUsers();
     } catch (err) {
       console.error('Failed to delete user:', err);
     }
   };
 
-  if (isLoading) {
+  if (searchUsers.isPending && !usersData) {
     return (
       <div style={{ display: 'grid', gap: '1rem' }}>
         {[1, 2, 3].map((i) => (
@@ -44,11 +68,11 @@ export function UsersSection() {
     );
   }
 
-  if (error) {
+  if (searchUsers.isError) {
     return (
       <div className="card" style={{ borderColor: 'var(--error)' }}>
-        <p style={{ color: 'var(--error)' }}>Error loading users: {error.message}</p>
-        <button className="btn btn-secondary" onClick={() => refetch()} style={{ marginTop: '1rem' }}>
+        <p style={{ color: 'var(--error)' }}>Error loading users</p>
+        <button className="btn btn-secondary" onClick={loadUsers} style={{ marginTop: '1rem' }}>
           Retry
         </button>
       </div>
@@ -59,7 +83,7 @@ export function UsersSection() {
     <section>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>
-          Users <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({data?.total || 0})</span>
+          Users <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({usersData?.total || 0})</span>
         </h2>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
           {showForm ? '✕ Cancel' : '+ Add User'}
@@ -102,7 +126,7 @@ export function UsersSection() {
       )}
 
       <div style={{ display: 'grid', gap: '1rem' }}>
-        {data?.data.map((user) => (
+        {usersData?.data.map((user) => (
           <div key={user.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h3 style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{user.name || 'Unnamed User'}</h3>
@@ -121,7 +145,7 @@ export function UsersSection() {
             </button>
           </div>
         ))}
-        {data?.data.length === 0 && (
+        {usersData?.data.length === 0 && (
           <div className="card" style={{ textAlign: 'center', color: 'var(--muted)' }}>
             No users yet. Create one to get started!
           </div>
@@ -130,4 +154,3 @@ export function UsersSection() {
     </section>
   );
 }
-

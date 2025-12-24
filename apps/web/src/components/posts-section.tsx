@@ -1,31 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  useGetAllPosts,
-  useCreateANewPost,
-  useDeleteAPost,
-  usePublishAPost,
-  useUnpublishAPost,
+  usePostsControllerSearch,
+  usePostsControllerCreate,
+  usePostsControllerRemove,
+  usePostsControllerPublish,
+  usePostsControllerUnpublish,
 } from '@/generated/api/posts/posts';
-import { useGetAllUsers } from '@/generated/api/users/users';
-import type { CreatePost } from '@/generated/schemas';
+import { useUsersControllerSearch } from '@/generated/api/users/users';
+import type { CreatePostDto, PostsListDto, UsersListDto } from '@/generated/schemas';
 
 export function PostsSection() {
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<CreatePost>({
+  const [formData, setFormData] = useState<CreatePostDto>({
     title: '',
     content: '',
     authorId: '',
     published: false,
   });
+  const [postsData, setPostsData] = useState<PostsListDto | null>(null);
+  const [usersData, setUsersData] = useState<UsersListDto | null>(null);
 
-  const { data: postsData, isLoading, error, refetch } = useGetAllPosts();
-  const { data: usersData } = useGetAllUsers();
-  const createPost = useCreateANewPost();
-  const deletePost = useDeleteAPost();
-  const publishPost = usePublishAPost();
-  const unpublishPost = useUnpublishAPost();
+  const searchPosts = usePostsControllerSearch();
+  const searchUsers = useUsersControllerSearch();
+  const createPost = usePostsControllerCreate();
+  const deletePost = usePostsControllerRemove();
+  const publishPost = usePostsControllerPublish();
+  const unpublishPost = usePostsControllerUnpublish();
+
+  const loadPosts = async () => {
+    try {
+      const result = await searchPosts.mutateAsync({
+        data: {
+          pagination: { page: 1, limit: 20 },
+          sort: { field: 'createdAt', order: 'desc' },
+        },
+      });
+      setPostsData(result.data);
+    } catch (err) {
+      console.error('Failed to load posts:', err);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const result = await searchUsers.mutateAsync({
+        data: {
+          pagination: { page: 1, limit: 100 },
+        },
+      });
+      setUsersData(result.data);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadPosts();
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +68,7 @@ export function PostsSection() {
       await createPost.mutateAsync({ data: formData });
       setFormData({ title: '', content: '', authorId: '', published: false });
       setShowForm(false);
-      refetch();
+      loadPosts();
     } catch (err) {
       console.error('Failed to create post:', err);
     }
@@ -43,7 +78,7 @@ export function PostsSection() {
     if (!confirm('Are you sure you want to delete this post?')) return;
     try {
       await deletePost.mutateAsync({ id });
-      refetch();
+      loadPosts();
     } catch (err) {
       console.error('Failed to delete post:', err);
     }
@@ -56,13 +91,13 @@ export function PostsSection() {
       } else {
         await publishPost.mutateAsync({ id });
       }
-      refetch();
+      loadPosts();
     } catch (err) {
       console.error('Failed to toggle publish status:', err);
     }
   };
 
-  if (isLoading) {
+  if (searchPosts.isPending && !postsData) {
     return (
       <div style={{ display: 'grid', gap: '1rem' }}>
         {[1, 2, 3].map((i) => (
@@ -72,11 +107,11 @@ export function PostsSection() {
     );
   }
 
-  if (error) {
+  if (searchPosts.isError) {
     return (
       <div className="card" style={{ borderColor: 'var(--error)' }}>
-        <p style={{ color: 'var(--error)' }}>Error loading posts: {error.message}</p>
-        <button className="btn btn-secondary" onClick={() => refetch()} style={{ marginTop: '1rem' }}>
+        <p style={{ color: 'var(--error)' }}>Error loading posts</p>
+        <button className="btn btn-secondary" onClick={loadPosts} style={{ marginTop: '1rem' }}>
           Retry
         </button>
       </div>
@@ -205,4 +240,3 @@ export function PostsSection() {
     </section>
   );
 }
-
