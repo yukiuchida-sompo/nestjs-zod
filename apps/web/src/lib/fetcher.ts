@@ -4,7 +4,12 @@ export const customFetcher = async <T>(
   url: string,
   options?: RequestInit
 ): Promise<T> => {
-  const response = await fetch(`${API_BASE_URL}${url}`, {
+  // If url is already absolute (starts with http:// or https://), use it directly
+  const fullUrl = url.startsWith('http://') || url.startsWith('https://') 
+    ? url 
+    : `${API_BASE_URL}${url}`;
+
+  const response = await fetch(fullUrl, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -19,9 +24,19 @@ export const customFetcher = async <T>(
 
   // Handle 204 No Content
   if (response.status === 204) {
-    return undefined as T;
+    return {
+      data: undefined,
+      status: response.status,
+      headers: response.headers,
+    } as T;
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Return in Orval's expected format
+  return {
+    data,
+    status: response.status,
+    headers: response.headers,
+  } as T;
 };
-
