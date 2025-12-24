@@ -1,0 +1,26 @@
+{
+  "name": "nestjs-zod-prisma-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NestJS + Zod + Prisma monorepo with OpenAPI client generation",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:api": "pnpm --filter @app/api dev",
+    "dev:web": "pnpm --filter @app/web dev",
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @app/api build",
+    "build:web": "pnpm --filter @app/web build",
+    "db:generate": "pnpm --filter @app/api db:generate",
+    "db:push": "pnpm --filter @app/api db:push",
+    "db:migrate": "pnpm --filter @app/api db:migrate",
+    "db:studio": "pnpm --filter @app/api db:studio",
+    "generate:openapi": "pnpm --filter @app/api generate:openapi",
+    "generate:client": "pnpm --filter @app/web generate:client",
+    "lint": "pnpm -r lint"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
+
