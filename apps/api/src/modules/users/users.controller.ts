@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@anatine/zod-nestjs';
 import { UsersService } from './users.service';
 import {
+  SearchUsersDto,
   CreateUserDto,
   UpdateUserDto,
   UserDto,
@@ -27,15 +28,16 @@ import {
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all users' })
+  @Post('search')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Search users with complex filters' })
   @ApiResponse({
     status: 200,
-    description: 'List of users',
+    description: 'Paginated list of users matching the search criteria',
     type: UsersListDto,
   })
-  async findAll(): Promise<UsersListDto> {
-    return this.usersService.findAll();
+  async search(@Body() searchDto: SearchUsersDto): Promise<UsersListDto> {
+    return this.usersService.search(searchDto);
   }
 
   @Get(':id')

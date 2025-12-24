@@ -1,6 +1,13 @@
 import { createZodDto } from '@anatine/zod-nestjs';
 import { extendApi } from '@anatine/zod-openapi';
 import { z } from 'zod';
+import {
+  PaginationSchema,
+  SortOrderSchema,
+  StringFilterSchema,
+  NullableStringFilterSchema,
+  DateFilterSchema,
+} from '../../common/schemas';
 
 // Base Post schema
 export const PostSchema = extendApi(
@@ -27,6 +34,33 @@ export const PostWithAuthorSchema = PostSchema.extend({
     email: z.string().email(),
   }),
 });
+
+// Search Post DTO - supports complex nested conditions
+export const SearchPostsSchema = extendApi(
+  z.object({
+    filter: z.object({
+      id: z.string().cuid().optional().describe('Filter by exact ID'),
+      title: StringFilterSchema.optional().describe('Title filter conditions'),
+      content: NullableStringFilterSchema.optional().describe('Content filter conditions'),
+      published: z.boolean().optional().describe('Filter by publication status'),
+      createdAt: DateFilterSchema.optional().describe('Creation date filter'),
+      author: z.object({
+        id: z.string().cuid().optional().describe('Filter by author ID'),
+        email: StringFilterSchema.optional().describe('Author email filter'),
+        name: NullableStringFilterSchema.optional().describe('Author name filter'),
+      }).optional().describe('Filter by related author'),
+    }).optional().describe('Filter conditions'),
+    sort: z.object({
+      field: z.enum(['id', 'title', 'published', 'createdAt', 'updatedAt']).optional().default('createdAt'),
+      order: SortOrderSchema,
+    }).optional().describe('Sorting options'),
+    pagination: PaginationSchema.optional(),
+  }),
+  {
+    title: 'SearchPosts',
+    description: 'Search criteria for posts with complex nested conditions',
+  }
+);
 
 // Create Post DTO
 export const CreatePostSchema = extendApi(
@@ -59,7 +93,10 @@ export const UpdatePostSchema = extendApi(
 export const PostsListSchema = extendApi(
   z.object({
     data: z.array(PostWithAuthorSchema),
-    total: z.number().int(),
+    total: z.number().int().describe('Total number of matching records'),
+    page: z.number().int().describe('Current page number'),
+    limit: z.number().int().describe('Items per page'),
+    totalPages: z.number().int().describe('Total number of pages'),
   }),
   {
     title: 'PostsList',
@@ -68,6 +105,7 @@ export const PostsListSchema = extendApi(
 );
 
 // Create DTO classes from Zod schemas
+export class SearchPostsDto extends createZodDto(SearchPostsSchema) {}
 export class CreatePostDto extends createZodDto(CreatePostSchema) {}
 export class UpdatePostDto extends createZodDto(UpdatePostSchema) {}
 export class PostDto extends createZodDto(PostSchema) {}
@@ -75,9 +113,9 @@ export class PostWithAuthorDto extends createZodDto(PostWithAuthorSchema) {}
 export class PostsListDto extends createZodDto(PostsListSchema) {}
 
 // Type exports
+export type SearchPosts = z.infer<typeof SearchPostsSchema>;
 export type Post = z.infer<typeof PostSchema>;
 export type CreatePost = z.infer<typeof CreatePostSchema>;
 export type UpdatePost = z.infer<typeof UpdatePostSchema>;
 export type PostWithAuthor = z.infer<typeof PostWithAuthorSchema>;
 export type PostsList = z.infer<typeof PostsListSchema>;
-

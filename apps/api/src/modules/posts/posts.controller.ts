@@ -8,13 +8,13 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  Query,
   UsePipes,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ZodValidationPipe } from '@anatine/zod-nestjs';
 import { PostsService } from './posts.service';
 import {
+  SearchPostsDto,
   CreatePostDto,
   UpdatePostDto,
   PostWithAuthorDto,
@@ -27,17 +27,16 @@ import {
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all posts' })
-  @ApiQuery({ name: 'published', required: false, type: Boolean, description: 'Filter by published status' })
+  @Post('search')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Search posts with complex filters' })
   @ApiResponse({
     status: 200,
-    description: 'List of posts',
+    description: 'Paginated list of posts matching the search criteria',
     type: PostsListDto,
   })
-  async findAll(@Query('published') published?: string): Promise<PostsListDto> {
-    const publishedOnly = published === 'true';
-    return this.postsService.findAll(publishedOnly);
+  async search(@Body() searchDto: SearchPostsDto): Promise<PostsListDto> {
+    return this.postsService.search(searchDto);
   }
 
   @Get(':id')

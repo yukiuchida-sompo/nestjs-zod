@@ -1,15 +1,13 @@
 import { createZodDto } from '@anatine/zod-nestjs';
 import { extendApi } from '@anatine/zod-openapi';
 import { z } from 'zod';
-
-// Pagination schema (reusable)
-export const PaginationSchema = z.object({
-  page: z.number().int().min(1).optional().default(1).describe('Page number (1-indexed)'),
-  limit: z.number().int().min(1).max(100).optional().default(20).describe('Number of items per page'),
-});
-
-// Sort order schema
-export const SortOrderSchema = z.enum(['asc', 'desc']).optional().default('desc');
+import {
+  PaginationSchema,
+  SortOrderSchema,
+  StringFilterSchema,
+  NullableStringFilterSchema,
+  DateFilterSchema,
+} from '../../common/schemas';
 
 // Base User schema
 export const UserSchema = extendApi(
@@ -31,25 +29,9 @@ export const SearchUsersSchema = extendApi(
   z.object({
     filter: z.object({
       id: z.string().cuid().optional().describe('Filter by exact ID'),
-      email: z.object({
-        equals: z.string().email().optional().describe('Exact email match'),
-        contains: z.string().optional().describe('Email contains this string'),
-        startsWith: z.string().optional().describe('Email starts with this string'),
-        endsWith: z.string().optional().describe('Email ends with this string'),
-      }).optional().describe('Email filter conditions'),
-      name: z.object({
-        equals: z.string().nullable().optional().describe('Exact name match'),
-        contains: z.string().optional().describe('Name contains this string'),
-        startsWith: z.string().optional().describe('Name starts with this string'),
-        endsWith: z.string().optional().describe('Name ends with this string'),
-        isNull: z.boolean().optional().describe('Filter by null/not null'),
-      }).optional().describe('Name filter conditions'),
-      createdAt: z.object({
-        gte: z.coerce.date().optional().describe('Created at or after this date'),
-        lte: z.coerce.date().optional().describe('Created at or before this date'),
-        gt: z.coerce.date().optional().describe('Created after this date'),
-        lt: z.coerce.date().optional().describe('Created before this date'),
-      }).optional().describe('Creation date filter'),
+      email: StringFilterSchema.optional().describe('Email filter conditions'),
+      name: NullableStringFilterSchema.optional().describe('Name filter conditions'),
+      createdAt: DateFilterSchema.optional().describe('Creation date filter'),
       posts: z.object({
         some: z.object({
           published: z.boolean().optional().describe('Has posts with this publish status'),
